@@ -50,7 +50,7 @@ for images, masks in train_batches.take(2):
 input_shape = np.shape(images_np)[1:]
 OUTPUT_CLASSES = 2
 
-model = unet_model(input_shape=input_shape, output_channels=OUTPUT_CLASSES)
+model = unet_model(input_shape=input_shape, output_channels=OUTPUT_CLASSES, MODEL_PNG_PATH=MODEL_PNG_PATH)
 
 # %%
 EPOCHS = 20

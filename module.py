@@ -6,7 +6,7 @@ import cv2, os, glob
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
-from keras.layers import Layer, RandomFlip, RandomRotation, RandomZoom, Input, Concatenate, Conv2DTranspose
+from keras.layers import Layer, RandomFlip, RandomRotation, RandomZoom, Input, Concatenate, Conv2DTranspose, Dropout
 from keras.utils import array_to_img
 from tensorflow_examples.models.pix2pix import pix2pix
 from keras.applications import MobileNetV2
@@ -149,7 +149,6 @@ def unet_model(input_shape, output_channels:int, MODEL_PNG_PATH):
         x = up(x)
         concat = Concatenate()
         x = concat([x, skip])
-    # x = Dropout(0.3)(x)
 
     last = Conv2DTranspose(filters=output_channels, kernel_size=3, strides=2, padding='same')
     outputs = last(x)
