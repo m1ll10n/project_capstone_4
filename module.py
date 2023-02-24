@@ -16,6 +16,11 @@ from keras.losses import SparseCategoricalCrossentropy
 from keras.utils import plot_model
 
 class Augment(Layer):
+    """Augmenting images for training
+
+    Args:
+        Layer (Layer): Keras layer
+    """
     def __init__(self,seed=42):
         super().__init__()
         self.augment_inputs = RandomRotation(0.2, seed=seed)
@@ -33,6 +38,11 @@ class Augment(Layer):
         return inputs,labels
 
 class TerminateOnBaseline(Callback):
+    """Terminating training when desired accuracy achieved
+
+    Args:
+        Callback (Callback): Keras callback
+    """
     def __init__(self, monitor='accuracy', baseline=0.9):
         super(TerminateOnBaseline, self).__init__()
         self.monitor = monitor
@@ -47,6 +57,14 @@ class TerminateOnBaseline(Callback):
                 self.model.stop_training = True 
 
 def data_load(TRAIN_PATH):
+    """Loading the images and stacking different nucleus segments into one mask
+
+    Args:
+        TRAIN_PATH (str): Path to train dataset
+
+    Returns:
+        ndarray: List of numpy array
+    """
     train_ids = next(os.walk(TRAIN_PATH))[1]
 
     images = []
@@ -72,6 +90,12 @@ def data_load(TRAIN_PATH):
     return images_np, masks_np
 
 def data_inspect(images_np, masks_np):
+    """Inspecting the dataset
+
+    Args:
+        images_np (ndarray): An array of images
+        masks_np (ndarray): An array of masks
+    """
     plt.figure(figsize=(10,10))
     for i in range(1,4):
         plt.subplot(1,3,i)
@@ -89,6 +113,15 @@ def data_inspect(images_np, masks_np):
     plt.show()
 
 def data_split(images_np, masks_np):
+    """Splitting the dataset into train-test dataset
+
+    Args:
+        images_np (ndarray): An array of images
+        masks_np (ndarray): An array of masks
+
+    Returns:
+        ZipDataset: ZipDataset
+    """
     masks_np_exp = np.expand_dims(masks_np, axis=-1)
     converted_masks = np.round(masks_np_exp/255).astype(np.int64)
     converted_images = images_np / 255.0
@@ -106,6 +139,11 @@ def data_split(images_np, masks_np):
     return train_dataset, test_dataset
 
 def display(display_list):
+    """Displaying images for input, true mask, predicted mask
+
+    Args:
+        display_list (list): A list of images
+    """
     plt.figure(figsize=(15,15))
     title = ['Input Image','True Mask','Predicted Mask']
     
@@ -118,6 +156,16 @@ def display(display_list):
     plt.show()
 
 def unet_model(input_shape, output_channels:int, MODEL_PNG_PATH):
+    """A simple UNet model
+
+    Args:
+        input_shape (tuple): Input shape
+        output_channels (int): Number of classes
+        MODEL_PNG_PATH (str): Path to save model's architecture
+
+    Returns:
+        Functional: Functional model
+    """
     base_model = MobileNetV2(input_shape=input_shape, include_top=False)
 
     layer_names = [
@@ -163,16 +211,39 @@ def unet_model(input_shape, output_channels:int, MODEL_PNG_PATH):
     return model
 
 def create_mask(pred_mask):
+    """Create a mask based on a picture
+
+    Args:
+        pred_mask (ndarray): Prediction mask
+
+    Returns:
+        ndarray: Numpy array of mask
+    """
     pred_mask = tf.argmax(pred_mask,axis=-1)
     pred_mask = pred_mask[...,tf.newaxis]
     return pred_mask[0]
 
 def show_predictions(model, dataset,num=1):
+    """Show predictions on first image of each batches of dataset
+
+    Args:
+        model (Functional): Functional model
+        dataset (PrefetchDataset): Prefetch dataset to make predictions
+        num (int, optional): Number of batches to show predictions. Defaults to 1.
+    """
     for image,mask in dataset.take(num):
         pred_mask = model.predict(image)
         display([image[0],mask[0],create_mask(pred_mask)])
 
 def test_load(TEST_PATH):
+    """Loading test data for deploy.py
+
+    Args:
+        TEST_PATH (str): Path to test dataset
+
+    Returns:
+        ndarray: Numpy array for images and masks
+    """
     test_images = []
     test_masks = []
 
@@ -195,6 +266,16 @@ def test_load(TEST_PATH):
     return test_images, test_masks
 
 def test_preparation(test_images, test_masks, BATCH_SIZE):
+    """Preparing test data for predictions
+
+    Args:
+        test_images (ndarray): An array of images
+        test_masks (ndarray): An array of masks
+        BATCH_SIZE (int): Batch size used for training the model
+
+    Returns:
+        _type_: _description_
+    """
     masks_np_exp = np.expand_dims(test_masks, axis=-1)
     converted_masks = np.round(masks_np_exp/255).astype(np.int64) # To convert to class labels [0, 1]
     converted_images = test_images / 255.0 # Normalize image values
